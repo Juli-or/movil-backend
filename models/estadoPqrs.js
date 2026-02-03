@@ -1,4 +1,3 @@
-// models/estado_pqrs.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
@@ -12,7 +11,8 @@ const EstadoPqrs = sequelize.define('EstadoPqrs', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-  },},{
+  },
+}, {
   tableName: 'estado_pqrs',
   timestamps: false,
 });

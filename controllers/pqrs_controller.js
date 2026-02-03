@@ -1,4 +1,5 @@
-const Pqrs = require("../models/pqrs_model");
+const Pqrs = require("../models/pqrs");
+const { Op } = require("sequelize");
 
 exports.createPqrs = async (req, res) => {
     try {
@@ -70,7 +71,29 @@ exports.getMyPqrs = async (req, res) => {
 
 exports.getAllPqrs = async (req, res) => {
     try {
+        const { search } = req.query;
+        let whereClause = {};
+
+        if (search) {
+            if (!isNaN(search) && search.trim() !== '') {
+                whereClause = {
+                    [Op.or]: [
+                        { id_pqrs: search },
+                        { id_usuario: search }
+                    ]
+                };
+            } else {
+                whereClause = {
+                    [Op.or]: [
+                        { asunto: { [Op.like]: `%${search}%` } },
+                        { descripcion: { [Op.like]: `%${search}%` } }
+                    ]
+                };
+            }
+        }
+
         const pqrs = await Pqrs.findAll({
+            where: whereClause,
             order: [['fecha_creacion', 'DESC']]
         });
 
@@ -96,7 +119,7 @@ exports.updatePqrsStatus = async (req, res) => {
         if (!id_estado_pqrs || !id_administrador_respuesta) { 
             return res.status(400).json({
                 success: false,
-                error: "Los campos id_estado_pqrs y id_administrador_respuesta (simulado) son requeridos"
+                error: "Los campos id_estado_pqrs y id_administrador_respuesta son requeridos"
             });
         }
 
@@ -141,7 +164,7 @@ exports.getPqrsById = async (req, res) => {
         if (!id_usuario_simulado || !id_rol_simulado) {
             return res.status(400).json({
                 success: false,
-                error: "Los IDs de usuario y rol (simulados) son requeridos para esta consulta"
+                error: "Los IDs de usuario y rol son requeridos para esta consulta"
             });
         }
 

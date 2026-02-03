@@ -1,5 +1,5 @@
-
 const EstadoPqrs = require('../models/estadoPqrs');
+
 exports.createEstado = async (req, res) => {
   try {
     const newEstado = await EstadoPqrs.create(req.body);
@@ -12,7 +12,6 @@ exports.createEstado = async (req, res) => {
   }
 };
 
-// 2. Obtener Todos los Estados 
 exports.getAllEstados = async (req, res) => {
   try {
     const estados = await EstadoPqrs.findAll({
@@ -24,7 +23,6 @@ exports.getAllEstados = async (req, res) => {
   }
 };
 
-// 3. Obtener Estado por ID 
 exports.getEstadoById = async (req, res) => {
   try {
     const estado = await EstadoPqrs.findByPk(req.params.id);
@@ -37,7 +35,6 @@ exports.getEstadoById = async (req, res) => {
   }
 };
 
-// 4. Actualizar Estado 
 exports.updateEstado = async (req, res) => {
   try {
     const [updated] = await EstadoPqrs.update(req.body, {
@@ -53,7 +50,6 @@ exports.updateEstado = async (req, res) => {
   }
 };
 
-// 5. Eliminar Estado (Solo Admin)
 exports.deleteEstado = async (req, res) => {
   try {
     const deleted = await EstadoPqrs.destroy({

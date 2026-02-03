@@ -1,14 +1,11 @@
-// controllers/productoDescuentoController.js
 const ProductoDescuento = require('../models/producto_descuento');
 const Product = require('../models/product');
 const Descuento = require('../models/descuento');
 
-// 1. ASIGNAR un Descuento a un Producto (Crear asignación)
 exports.assignDescuentoToProduct = async (req, res) => {
   try {
     const { id_producto, id_descuento } = req.body;
 
-    // Opcional: Verificar que ambos IDs existan (Buena práctica)
     if (!await Product.findByPk(id_producto) || !await Descuento.findByPk(id_descuento)) {
         return res.status(404).json({ message: 'Producto o Descuento no encontrado.' });
     }
@@ -28,15 +25,14 @@ exports.assignDescuentoToProduct = async (req, res) => {
 };
 
 exports.getAsignaciones = async (req, res) => {
-  try {
-
-    const asignaciones = await ProductoDescuento.findAll({ 
-      include: [Descuento, Product], 
-    });
-    res.json(asignaciones);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al obtener las asignaciones.', details: error.message });
-  }
+  try {
+    const asignaciones = await ProductoDescuento.findAll({ 
+      include: [Descuento, Product], 
+    });
+    res.json(asignaciones);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener las asignaciones.', details: error.message });
+  }
 };
 
 exports.unassignDescuentoFromProduct = async (req, res) => {

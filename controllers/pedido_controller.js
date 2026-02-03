@@ -14,9 +14,6 @@ const crearPedido = async (req, res) => {
             total_pedido
         } = req.body;
 
-        console.log('📦 Creando pedido con datos:', req.body);
-
-
         if (!id_usuario || !id_metodo_pago || !direccion_envio || !ciudad_envio) {
             await transaction.rollback();
             return res.status(400).json({
@@ -24,7 +21,6 @@ const crearPedido = async (req, res) => {
                 error: "Datos incompletos: id_usuario, id_metodo_pago, direccion_envio y ciudad_envio son requeridos"
             });
         }
-
 
         const carrito = await sequelize.query(`
       SELECT id_carrito FROM carrito 
@@ -44,7 +40,6 @@ const crearPedido = async (req, res) => {
         }
 
         const id_carrito = carrito[0].id_carrito;
-
 
         const itemsCarrito = await sequelize.query(`
       SELECT 
@@ -73,7 +68,6 @@ const crearPedido = async (req, res) => {
             });
         }
 
-
         for (const item of itemsCarrito) {
             if (item.cantidad > item.stock_disponible) {
                 await transaction.rollback();
@@ -84,7 +78,6 @@ const crearPedido = async (req, res) => {
             }
         }
 
-
         const numeroSeguimiento = `AGRO-${Date.now().toString().slice(-8)}`;
 
         const pedidoResult = await sequelize.query(`
@@ -94,8 +87,8 @@ const crearPedido = async (req, res) => {
         direccion_envio, 
         ciudad_envio, 
         codigo_postal_envio, 
-        notas_pedido,
-        total_pedido,
+        notas_pedido, 
+        total_pedido, 
         id_estado_pedido,
         numero_seguimiento
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -116,7 +109,6 @@ const crearPedido = async (req, res) => {
         });
 
         const id_pedido = pedidoResult[0];
-
 
         for (const item of itemsCarrito) {
             await sequelize.query(`
@@ -140,7 +132,6 @@ const crearPedido = async (req, res) => {
             });
         }
 
-
         await sequelize.query(`
       UPDATE carrito 
       SET estado_carrito = 'Completado', fecha_ultima_actualizacion = NOW()
@@ -161,7 +152,6 @@ const crearPedido = async (req, res) => {
 
         await transaction.commit();
 
-
         const pedidoCreado = await sequelize.query(`
       SELECT 
         p.*,
@@ -177,7 +167,6 @@ const crearPedido = async (req, res) => {
             replacements: [id_pedido],
             type: sequelize.QueryTypes.SELECT
         });
-
 
         const detallesPedido = await sequelize.query(`
       SELECT 
@@ -196,10 +185,8 @@ const crearPedido = async (req, res) => {
         const respuesta = {
             ...pedidoCreado[0],
             detalles: detallesPedido,
-            items: detallesPedido // Para compatibilidad
+            items: detallesPedido
         };
-
-        console.log(' Pedido creado exitosamente:', respuesta.numero_seguimiento);
 
         res.json({
             success: true,
@@ -210,7 +197,6 @@ const crearPedido = async (req, res) => {
     } catch (error) {
         await transaction.rollback();
         console.error("Error creando pedido:", error);
-
 
         let errorMessage = "Error al crear el pedido";
         if (error.name === 'SequelizeDatabaseError') {
@@ -248,7 +234,6 @@ const obtenerPedidosUsuario = async (req, res) => {
             replacements: [id_usuario],
             type: sequelize.QueryTypes.SELECT
         });
-
 
         for (let pedido of pedidos) {
             const detalles = await sequelize.query(`
@@ -348,18 +333,10 @@ const obtenerDetallePedido = async (req, res) => {
 
 
 const cancelarPedido = async (req, res) => {
-    console.log('🔄 INICIANDO CANCELACIÓN DE PEDIDO...');
-
     try {
         const { id_pedido } = req.params;
         const { motivo_cancelacion } = req.body;
 
-        console.log(' Datos recibidos:');
-        console.log('   - ID Pedido:', id_pedido);
-        console.log('   - Motivo:', motivo_cancelacion);
-
-
-        console.log(' Buscando pedido en la base de datos...');
         const pedido = await sequelize.query(`
       SELECT p.*, ep.nombre_estado 
       FROM pedidos p
@@ -370,37 +347,22 @@ const cancelarPedido = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-        console.log(' Pedido encontrado:', pedido.length ? 'SÍ' : 'NO');
-
         if (!pedido.length) {
-            console.log(' Pedido no encontrado');
             return res.status(404).json({
                 success: false,
                 error: "Pedido no encontrado"
             });
         }
 
-        console.log(' Información del pedido:');
-        console.log('   - Número:', pedido[0].numero_seguimiento);
-        console.log('   - Estado actual:', pedido[0].nombre_estado, '(ID:', pedido[0].id_estado_pedido + ')');
-        console.log('   - Total:', pedido[0].total_pedido);
-
-
         if (pedido[0].id_estado_pedido !== 1) {
-            console.log(' Pedido no se puede cancelar - Estado:', pedido[0].id_estado_pedido);
             return res.status(400).json({
                 success: false,
                 error: `El pedido no se puede cancelar porque ya está ${pedido[0].nombre_estado.toLowerCase()}`
             });
         }
 
-
-        console.log('🔄 Actualizando estado del pedido a "Cancelado"...');
-
-
         let updateQuery;
         let updateParams;
-
 
         try {
             updateQuery = `
@@ -412,8 +374,6 @@ const cancelarPedido = async (req, res) => {
       `;
             updateParams = [motivo_cancelacion || 'Cancelado por el usuario', id_pedido];
         } catch (error) {
-
-            console.log(' Columna motivo_cancelacion no encontrada, usando consulta alternativa...');
             updateQuery = `
         UPDATE pedidos 
         SET id_estado_pedido = 4, 
@@ -428,18 +388,13 @@ const cancelarPedido = async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
         });
 
-        console.log(' Estado actualizado. Filas afectadas:', updateResult[0]);
-
         if (updateResult[0] === 0) {
-            console.log(' No se pudo actualizar el pedido');
             return res.status(500).json({
                 success: false,
                 error: "No se pudo actualizar el estado del pedido"
             });
         }
 
-
-        console.log(' Intentando restaurar stock...');
         try {
             const detallesPedido = await sequelize.query(`
         SELECT * FROM detalle_pedido WHERE id_pedido = ?
@@ -448,11 +403,7 @@ const cancelarPedido = async (req, res) => {
                 type: sequelize.QueryTypes.SELECT
             });
 
-            console.log(' Productos a restaurar:', detallesPedido.length);
-
             for (const detalle of detallesPedido) {
-                console.log(`   - Producto ${detalle.id_producto}: +${detalle.cantidad} unidades`);
-
                 await sequelize.query(`
           UPDATE producto 
           SET cantidad = cantidad + ? 
@@ -462,13 +413,9 @@ const cancelarPedido = async (req, res) => {
                     type: sequelize.QueryTypes.UPDATE
                 });
             }
-            console.log(' Stock restaurado exitosamente');
         } catch (stockError) {
-            console.log(' No se pudo restaurar el stock (continuando sin esta funcionalidad):', stockError.message);
-
+            console.error('No se pudo restaurar el stock:', stockError.message);
         }
-
-        console.log('🎉 CANCELACIÓN COMPLETADA EXITOSAMENTE');
 
         res.json({
             success: true,
@@ -482,15 +429,11 @@ const cancelarPedido = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(" ERROR CRÍTICO cancelando pedido:", error);
-        console.error(" Stack trace completo:", error.stack);
-
+        console.error("ERROR CRÍTICO cancelando pedido:", error);
 
         let errorMessage = "Error interno del servidor al cancelar el pedido";
 
         if (error.name === 'SequelizeDatabaseError' && error.parent) {
-            console.error(" Error de base de datos:", error.parent.code, error.parent.sqlMessage);
-
             if (error.parent.code === 'ER_BAD_FIELD_ERROR') {
                 errorMessage = "Error: Columna no encontrada en la base de datos";
             } else if (error.parent.code === 'ER_NO_SUCH_TABLE') {

@@ -1,11 +1,8 @@
 const sequelize = require('../config/db');
 
-
 const getActiveCart = async (req, res) => {
     try {
-        console.log('=== INICIANDO getActiveCart ===');
         const { id_usuario } = req.params;
-        console.log('ID Usuario recibido:', id_usuario);
 
         if (!id_usuario) {
             return res.status(400).json({
@@ -14,8 +11,6 @@ const getActiveCart = async (req, res) => {
             });
         }
 
-
-        console.log('Buscando carrito existente...');
         let carrito = await sequelize.query(`
             SELECT * FROM carrito 
             WHERE id_usuario = ?
@@ -26,13 +21,9 @@ const getActiveCart = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-        console.log('Carritos encontrados:', carrito.length);
-
         let id_carrito;
 
-
         if (carrito.length === 0) {
-            console.log('No existe ningún carrito, creando uno nuevo...');
             try {
                 const nuevoCarrito = await sequelize.query(`
                     INSERT INTO carrito (id_usuario, estado_carrito) 
@@ -43,7 +34,6 @@ const getActiveCart = async (req, res) => {
                 });
 
                 id_carrito = nuevoCarrito[0];
-                console.log(' Nuevo carrito creado con ID:', id_carrito);
 
                 carrito = [{
                     id_carrito: id_carrito,
@@ -53,7 +43,6 @@ const getActiveCart = async (req, res) => {
                     fecha_ultima_actualizacion: new Date()
                 }];
             } catch (insertError) {
-                console.log(' Error al crear carrito:', insertError.message);
                 return res.status(500).json({
                     success: false,
                     error: "No se pudo crear el carrito",
@@ -61,12 +50,9 @@ const getActiveCart = async (req, res) => {
                 });
             }
         } else {
-
             id_carrito = carrito[0].id_carrito;
-            console.log('Carrito existente encontrado con ID:', id_carrito, 'Estado:', carrito[0].estado_carrito);
 
             if (carrito[0].estado_carrito !== 'Activo') {
-                console.log('Reactivando carrito...');
                 await sequelize.query(`
                     UPDATE carrito 
                     SET estado_carrito = 'Activo', fecha_ultima_actualizacion = NOW()
@@ -77,12 +63,9 @@ const getActiveCart = async (req, res) => {
                 });
                 carrito[0].estado_carrito = 'Activo';
                 carrito[0].fecha_ultima_actualizacion = new Date();
-                console.log(' Carrito reactivado');
             }
         }
 
-
-        console.log('Obteniendo items del carrito...');
         const items = await sequelize.query(`
             SELECT 
                 dc.id_detalle_carrito,
@@ -106,14 +89,8 @@ const getActiveCart = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-        console.log('Items encontrados:', items.length);
-
-
         const subtotal = items.reduce((sum, item) => sum + parseFloat(item.subtotal || 0), 0);
         const totalItems = items.reduce((sum, item) => sum + parseInt(item.cantidad || 0), 0);
-
-        console.log(' Resumen - Subtotal:', subtotal, 'Total items:', totalItems);
-
 
         res.json({
             success: true,
@@ -129,7 +106,7 @@ const getActiveCart = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(" ERROR CRÍTICO en getActiveCart:", error);
+        console.error("ERROR CRÍTICO en getActiveCart:", error);
         res.status(500).json({
             success: false,
             error: "Error interno del servidor",
@@ -140,15 +117,10 @@ const getActiveCart = async (req, res) => {
 
 
 const addToCart = async (req, res) => {
-    console.log('=== INICIANDO addToCart ===');
-    console.log('Body recibido:', req.body);
-
     try {
         const { id_usuario, id_producto, cantidad } = req.body;
 
-
         if (!id_usuario || !id_producto || !cantidad) {
-            console.log(' Datos incompletos');
             return res.status(400).json({
                 success: false,
                 error: "Datos incompletos"
@@ -162,7 +134,6 @@ const addToCart = async (req, res) => {
             });
         }
 
-
         const producto = await sequelize.query(`
             SELECT id_producto, nombre_producto, precio_unitario, estado_producto 
             FROM producto 
@@ -173,13 +144,11 @@ const addToCart = async (req, res) => {
         });
 
         if (!producto.length) {
-            console.log(' Producto no encontrado:', id_producto);
             return res.status(404).json({
                 success: false,
                 error: "Producto no disponible"
             });
         }
-
 
         let carrito = await sequelize.query(`
             SELECT * FROM carrito 
@@ -194,7 +163,6 @@ const addToCart = async (req, res) => {
         let id_carrito;
 
         if (!carrito.length) {
-
             try {
                 const nuevoCarrito = await sequelize.query(`
                     INSERT INTO carrito (id_usuario, estado_carrito) 
@@ -204,9 +172,7 @@ const addToCart = async (req, res) => {
                     type: sequelize.QueryTypes.INSERT
                 });
                 id_carrito = nuevoCarrito[0];
-                console.log('Nuevo carrito creado:', id_carrito);
             } catch (insertError) {
-                console.log('Error al crear carrito:', insertError.message);
                 return res.status(500).json({
                     success: false,
                     error: "Error al crear carrito",
@@ -215,8 +181,6 @@ const addToCart = async (req, res) => {
             }
         } else {
             id_carrito = carrito[0].id_carrito;
-            console.log('Carrito existente:', id_carrito, 'Estado:', carrito[0].estado_carrito);
-
 
             if (carrito[0].estado_carrito !== 'Activo') {
                 await sequelize.query(`
@@ -227,13 +191,11 @@ const addToCart = async (req, res) => {
                     replacements: [id_carrito],
                     type: sequelize.QueryTypes.UPDATE
                 });
-                console.log('Carrito reactivado');
             }
         }
 
         const precioUnitario = producto[0].precio_unitario;
         const subtotal = cantidad * precioUnitario;
-
 
         const itemExistente = await sequelize.query(`
             SELECT * FROM detalle_carrito 
@@ -244,7 +206,6 @@ const addToCart = async (req, res) => {
         });
 
         if (itemExistente.length) {
-
             const nuevaCantidad = parseInt(itemExistente[0].cantidad) + parseInt(cantidad);
             const nuevoSubtotal = nuevaCantidad * precioUnitario;
 
@@ -256,9 +217,7 @@ const addToCart = async (req, res) => {
                 replacements: [nuevaCantidad, nuevoSubtotal, itemExistente[0].id_detalle_carrito],
                 type: sequelize.QueryTypes.UPDATE
             });
-            console.log('✅ Producto actualizado en carrito');
         } else {
-
             await sequelize.query(`
                 INSERT INTO detalle_carrito 
                 (id_carrito, id_producto, cantidad, precio_unitario_al_momento, subtotal)
@@ -267,9 +226,7 @@ const addToCart = async (req, res) => {
                 replacements: [id_carrito, id_producto, cantidad, precioUnitario, subtotal],
                 type: sequelize.QueryTypes.INSERT
             });
-            console.log(' Nuevo producto agregado al carrito');
         }
-
 
         await sequelize.query(`
             UPDATE carrito 
@@ -279,8 +236,6 @@ const addToCart = async (req, res) => {
             replacements: [id_carrito],
             type: sequelize.QueryTypes.UPDATE
         });
-
-        console.log('=== addToCart COMPLETADO CON ÉXITO ===');
 
         res.json({
             success: true,
@@ -293,7 +248,7 @@ const addToCart = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(" ERROR en addToCart:", error);
+        console.error("ERROR en addToCart:", error);
         res.status(500).json({
             success: false,
             error: "Error al agregar producto",
@@ -334,21 +289,16 @@ const getCartItemsCount = async (req, res) => {
 
 
 const updateCartItem = async (req, res) => {
-    console.log('=== INICIANDO updateCartItem ===');
     const { id_item } = req.params;
     const { cantidad } = req.body;
 
-    console.log('ID Item:', id_item, 'Nueva cantidad:', cantidad);
-
     try {
-
         if (cantidad === undefined || cantidad === null || cantidad < 0) {
             return res.status(400).json({
                 success: false,
                 error: "La cantidad debe ser mayor o igual a 0"
             });
         }
-
 
         const itemInfo = await sequelize.query(`
             SELECT 
@@ -368,13 +318,11 @@ const updateCartItem = async (req, res) => {
         });
 
         if (!itemInfo.length) {
-            console.log('❌ Item no encontrado:', id_item);
             return res.status(404).json({
                 success: false,
                 error: "Item del carrito no encontrado"
             });
         }
-
 
         if (cantidad === 0) {
             await sequelize.query(`
@@ -384,9 +332,6 @@ const updateCartItem = async (req, res) => {
                 replacements: [id_item],
                 type: sequelize.QueryTypes.DELETE
             });
-
-            console.log('✅ Item eliminado (cantidad = 0)');
-
 
             await sequelize.query(`
                 UPDATE carrito 
@@ -407,7 +352,6 @@ const updateCartItem = async (req, res) => {
             });
         }
 
-
         const stockInfo = await sequelize.query(`
             SELECT 
                 p.cantidad as stock_producto,
@@ -423,7 +367,6 @@ const updateCartItem = async (req, res) => {
         const stockDisponible = stockInfo[0]?.stock_inventario || stockInfo[0]?.stock_producto || 0;
 
         if (cantidad > stockDisponible) {
-            console.log(' Stock insuficiente. Disponible:', stockDisponible, 'Solicitado:', cantidad);
             return res.status(400).json({
                 success: false,
                 error: `Stock insuficiente. Solo hay ${stockDisponible} unidades disponibles`
@@ -441,9 +384,6 @@ const updateCartItem = async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
         });
 
-        console.log(' Cantidad actualizada:', cantidad, 'Subtotal:', nuevoSubtotal);
-
-
         await sequelize.query(`
             UPDATE carrito 
             SET fecha_ultima_actualizacion = NOW() 
@@ -452,8 +392,6 @@ const updateCartItem = async (req, res) => {
             replacements: [itemInfo[0].id_carrito],
             type: sequelize.QueryTypes.UPDATE
         });
-
-        console.log('=== updateCartItem COMPLETADO CON ÉXITO ===');
 
         res.json({
             success: true,
@@ -466,7 +404,7 @@ const updateCartItem = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(" ERROR en updateCartItem:", error);
+        console.error("ERROR en updateCartItem:", error);
         res.status(500).json({
             success: false,
             error: "Error al actualizar cantidad",
@@ -477,13 +415,9 @@ const updateCartItem = async (req, res) => {
 
 
 const deleteCartItem = async (req, res) => {
-    console.log('=== INICIANDO deleteCartItem ===');
     const { id_item } = req.params;
 
-    console.log('ID Item a eliminar:', id_item);
-
     try {
-
         const itemInfo = await sequelize.query(`
             SELECT id_carrito FROM detalle_carrito 
             WHERE id_detalle_carrito = ?
@@ -493,13 +427,11 @@ const deleteCartItem = async (req, res) => {
         });
 
         if (!itemInfo.length) {
-            console.log(' Item no encontrado:', id_item);
             return res.status(404).json({
                 success: false,
                 error: "Item del carrito no encontrado"
             });
         }
-
 
         await sequelize.query(`
             DELETE FROM detalle_carrito 
@@ -508,9 +440,6 @@ const deleteCartItem = async (req, res) => {
             replacements: [id_item],
             type: sequelize.QueryTypes.DELETE
         });
-
-        console.log(' Item eliminado correctamente');
-
 
         await sequelize.query(`
             UPDATE carrito 
@@ -521,8 +450,6 @@ const deleteCartItem = async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
         });
 
-        console.log('=== deleteCartItem COMPLETADO CON ÉXITO ===');
-
         res.json({
             success: true,
             message: "Producto eliminado del carrito correctamente",
@@ -532,7 +459,7 @@ const deleteCartItem = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(" ERROR en deleteCartItem:", error);
+        console.error("ERROR en deleteCartItem:", error);
         res.status(500).json({
             success: false,
             error: "Error al eliminar producto del carrito",
@@ -543,13 +470,9 @@ const deleteCartItem = async (req, res) => {
 
 
 const clearCart = async (req, res) => {
-    console.log('=== INICIANDO clearCart ===');
     const { id_carrito } = req.params;
 
-    console.log('ID Carrito a vaciar:', id_carrito);
-
     try {
-
         const carrito = await sequelize.query(`
             SELECT id_carrito FROM carrito 
             WHERE id_carrito = ?
@@ -559,13 +482,11 @@ const clearCart = async (req, res) => {
         });
 
         if (!carrito.length) {
-            console.log(' Carrito no encontrado:', id_carrito);
             return res.status(404).json({
                 success: false,
                 error: "Carrito no encontrado"
             });
         }
-
 
         await sequelize.query(`
             DELETE FROM detalle_carrito 
@@ -574,9 +495,6 @@ const clearCart = async (req, res) => {
             replacements: [id_carrito],
             type: sequelize.QueryTypes.DELETE
         });
-
-        console.log(' Carrito vaciado correctamente');
-
 
         await sequelize.query(`
             UPDATE carrito 
@@ -587,8 +505,6 @@ const clearCart = async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
         });
 
-        console.log('=== clearCart COMPLETADO CON ÉXITO ===');
-
         res.json({
             success: true,
             message: "Carrito vaciado correctamente",
@@ -598,7 +514,7 @@ const clearCart = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(" ERROR en clearCart:", error);
+        console.error("ERROR en clearCart:", error);
         res.status(500).json({
             success: false,
             error: "Error al vaciar el carrito",
@@ -611,8 +527,6 @@ const clearCart = async (req, res) => {
 const getCartSummary = async (req, res) => {
     try {
         const { id_carrito } = req.params;
-
-        console.log('Obteniendo resumen para carrito:', id_carrito);
 
         const result = await sequelize.query(`
             SELECT 
@@ -631,8 +545,6 @@ const getCartSummary = async (req, res) => {
             total_items: 0,
             subtotal: 0
         };
-
-        console.log('Resumen obtenido:', resumen);
 
         res.json({
             success: true,

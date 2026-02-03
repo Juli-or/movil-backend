@@ -2,7 +2,42 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Product:
+ *       type: object
+ *       required:
+ *         - nombre_producto
+ *         - precio_unitario
+ *       properties:
+ *         id_producto:
+ *           type: integer
+ *           description: ID auto-generado
+ *         nombre_producto:
+ *           type: string
+ *         descripcion_producto:
+ *           type: string
+ *         precio_unitario:
+ *           type: number
+ *           format: float
+ *         unidad_medida:
+ *           type: string
+ *         url_imagen:
+ *           type: string
+ *         id_SubCategoria:
+ *           type: integer
+ *         estado_producto:
+ *           type: string
+ *         cantidad:
+ *           type: integer
+ *       example:
+ *         nombre_producto: "Manzanas"
+ *         precio_unitario: 5000
+ *         unidad_medida: "kg"
+ *         cantidad: 100
+ */
 const Product = sequelize.define('Producto', {
     id_producto: {
         type: DataTypes.INTEGER,

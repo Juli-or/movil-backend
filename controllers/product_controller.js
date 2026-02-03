@@ -31,8 +31,6 @@ exports.getAllProducts = async (req, res) => {
             ORDER BY p.fecha_creacion DESC
         `, { type: sequelize.QueryTypes.SELECT });
 
-        console.log(`[PRODUCT_CONTROLLER] Found ${products.length} products with producer info`);
-
         res.json({
             success: true,
             data: products,
@@ -80,13 +78,6 @@ exports.getProductById = async (req, res) => {
                 error: "Producto no encontrado"
             });
         }
-
-        console.log(`[PRODUCT_CONTROLLER] Product details for ID ${id_producto}:`, {
-            productName: product[0].nombre_producto,
-            producer: product[0].producer_name,
-            producerEmail: product[0].producer_email,
-            producerRole: product[0].producer_role
-        });
 
         const imagenes = await sequelize.query(`
             SELECT url_imagen
@@ -160,7 +151,7 @@ exports.createProduct = async (req, res) => {
         const { nombre_producto, precio_unitario, id_usuario_creador } = req.body; 
         
         if (!id_usuario_creador) {
-             return res.status(400).json({ success: false, error: "El ID de usuario creador (simulado) es requerido." });
+             return res.status(400).json({ success: false, error: "El ID de usuario creador es requerido." });
         }
         
         const creador = id_usuario_creador;

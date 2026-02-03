@@ -6,7 +6,7 @@ const {
   createDescuento,
   updateDescuento,
   deleteDescuento,
-} = require("../controllers/ofertaController");
+} = require("../controllers/ofestas_controllesPro");
 
 router.get("/productor/:idProductor", verificarToken, getAllPromocionesByProductorId);
 router.post("/", verificarToken, createDescuento);

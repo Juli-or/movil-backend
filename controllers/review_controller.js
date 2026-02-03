@@ -45,7 +45,7 @@ exports.createReview = async (req, res) => {
         if (!id_producto || !calificacion || !texto_comentario || !id_usuario) {
             return res.status(400).json({
                 success: false,
-                message: "Los campos id_producto, calificacion, texto_comentario e id_usuario (simulado) son requeridos"
+                message: "Los campos id_producto, calificacion, texto_comentario e id_usuario son requeridos"
             });
         }
 
@@ -98,7 +98,7 @@ exports.updateReview = async (req, res) => {
         const { calificacion, texto_comentario, id_usuario } = req.body;
         
         if (!id_usuario) {
-            return res.status(400).json({ success: false, message: "El ID de usuario (simulado) es requerido." });
+            return res.status(400).json({ success: false, message: "El ID de usuario es requerido." });
         }
 
         const review = await sequelize.query(
@@ -131,7 +131,7 @@ exports.deleteReview = async (req, res) => {
         const { id_usuario } = req.body;
 
         if (!id_usuario) {
-            return res.status(400).json({ success: false, message: "El ID de usuario (simulado) es requerido." });
+            return res.status(400).json({ success: false, message: "El ID de usuario es requerido." });
         }
 
         const review = await sequelize.query(

@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user_model"); 
+const User = require("../models/user_model");
 require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "tu_clave_secreta_agrosoft";
@@ -14,13 +14,13 @@ exports.login = async (req, res) => {
     }
 
     const user = await User.findOne({ where: { correo_electronico } });
-    
+
     if (!user) {
       return res.status(401).json({ message: "Credenciales inválidas (Correo no encontrado)", status: "error" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password_hash);
-    
+
     if (!validPassword) {
       return res.status(401).json({ message: "Credenciales inválidas (Contraseña incorrecta)", status: "error" });
     }

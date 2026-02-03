@@ -6,7 +6,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tu_clave_secreta_agrosoft';
 
 exports.register = async (req, res) => {
     try {
-        console.log('Datos recibidos en req.body:', req.body);
         const { nombre_usuario, correo_electronico, password, documento_identidad, id_rol } = req.body;
 
         if (!nombre_usuario || !correo_electronico || !password || !documento_identidad || !id_rol) {

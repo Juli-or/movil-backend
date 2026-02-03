@@ -3,7 +3,6 @@ const { QueryTypes } = require("sequelize");
 
 const getAllSubcategorias = async (req, res) => {
   try {
-  
     const subcategorias = await sequelize.query(
       `
       SELECT 
@@ -22,8 +21,6 @@ const getAllSubcategorias = async (req, res) => {
     res.json(subcategorias);
   } catch (error) {
     console.error(" Error al obtener subcategorías:", error);
-    console.log("SQL Query:", error.sql);
-    console.log("SQL Message:", error.original ? error.original.sqlMessage : "No SQL message");
     res.status(500).json({
       error: "Error al cargar las subcategorías en el servidor.",
       details: error.original ? error.original.sqlMessage : error.message

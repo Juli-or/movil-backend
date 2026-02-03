@@ -1,4 +1,3 @@
-// models/producto_descuento.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
@@ -16,11 +15,6 @@ const ProductoDescuento = sequelize.define('ProductoDescuento', {
 }, {  
   tableName: 'producto_descuento', 
   timestamps: false,
-  indexes: [
-    {
-      unique: true,
-      fields: ['id_producto', 'id_descuento'],
-    },
-  ],
 });
+
 module.exports = ProductoDescuento;

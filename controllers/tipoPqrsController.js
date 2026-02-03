@@ -1,5 +1,5 @@
-
 const TipoPqrs = require('../models/tipo_pqrs_model');
+const { Op } = require("sequelize");
 
 exports.createTipo = async (req, res) => {
   try {
@@ -22,7 +22,21 @@ exports.createTipo = async (req, res) => {
 
 exports.getAllTipos = async (req, res) => {
   try {
+    const { search } = req.query;
+    let whereClause = {};
+
+    if (search) {
+      if (!isNaN(search) && search.trim() !== '') {
+        whereClause = { id_tipo_pqrs: search };
+      } else {
+        whereClause = {
+          nombre_tipo: { [Op.like]: `%${search}%` }
+        };
+      }
+    }
+
     const tipos = await TipoPqrs.findAll({
+      where: whereClause,
       order: [['id_tipo_pqrs', 'ASC']]
     });
     res.json(tipos);

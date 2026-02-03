@@ -6,23 +6,23 @@ require("./models/associations_model");
 
 const db = require("./config/db");
 
-// Rutas de Cliente
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/products_routes");
+const adminProductRoutes = require("./routes/productRoutes");
 const reviewRoutes = require("./routes/review_routes");
 const pqrsRoutes = require("./routes/pqrs_routes");
-const ofertasRoutes = require("./routes/ofertas_routes");
+
+const ofertasRoutes = require("./routes/ofertas_routes"); // ← TU RUTA CORRECTA (codigos, validar, productos)
+const ofertasProductor = require("./routes/ofertasRoutes");
 const descuentosRoutes = require("./routes/descuentos_routes");
-const ofertaRoutes = require("./routes/ofertaRoutes");
 const ordenRoutes = require("./routes/ordenRoutes");
 const productorRoutes = require("./routes/productorRoutes");
 const finanzasRoutes = require("./routes/finanzasRoutes");
 const comentarioResenaRoutes = require("./routes/comentarioResenaRoutes");
-const subcategoriaRoutes = require('./routes/subcategoriaRoutes');
+const subcategoriaRoutes = require("./routes/subcategoriaRoutes");
 const carritoRoutes = require("./routes/carrito_routes");
 const pedidoRoutes = require("./routes/pedido_routes");
 
-// Rutas de Administrador
 const rolRoutes = require('./routes/rolRoutes');
 const categoriaRoutes = require('./routes/categoriaRoutes');
 const descuentoRoutes = require('./routes/descuentoRoutes');
@@ -33,80 +33,152 @@ const estadoPedidoRoutes = require('./routes/estadoPedidoRoutes');
 
 const app = express();
 
-app.use(cors());
-app.use(bodyParser.json());
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL
+];
 
-// Rutas Públicas
-app.get("/", (req, res) => {
-  res.send("Servidor funcionando...");
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origen no permitido por CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 'Authorization', 'Accept', 'Origin',
+    'X-Requested-With', 'Cache-Control', 'Pragma'
+  ]
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+/* ============================================================
+   MIDDLEWARE
+============================================================ */
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:3000');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Accept, Origin, X-Requested-With, Cache-Control');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
 });
 
-// Rutas de Usuarios
-app.use("/api/users", userRoutes);
+/* ============================================================
+   RUTAS PÚBLICAS
+============================================================ */
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: " API Agrosoft funcionando correctamente",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      root: "/",
+      health: "/api/health",
+      ofertas: "/api/ofertas",
+      productos: "/api/products",
+      descuentos: "/api/descuentos"
+    }
+  });
+});
 
-// Rutas de Productos
-app.use("/api/products", productRoutes);
+/* ============================================================
+   API HEALTH CHECK
+============================================================ */
+app.get("/api/health", async (req, res) => {
+  try {
+    await db.authenticate();
+    res.json({ success: true, status: "healthy", database: "connected" });
+  } catch (err) {
+    res.status(500).json({ success: false, status: "unhealthy" });
+  }
+});
 
-// Rutas de Reviews
-app.use("/api/reviews", reviewRoutes);
+const { swaggerDocs } = require('./config/swagger');
 
-// Rutas de PQRS
-app.use("/api/pqrs", pqrsRoutes);
-app.use('/api/tipoPqrs', tipoPqrsRoutes);
-app.use('/api/estadoPqrs', estadoPqrsRoutes);
+/* ============================================================
+   RUTAS API
+============================================================ */
 
-// Rutas de Ofertas y Descuentos
+//  RUTAS OFICIALES DE OFERTAS (CLIENTE)
 app.use("/api/ofertas", ofertasRoutes);
-app.use("/api/ofertas-alt", ofertaRoutes);
+app.use("/api/ofertasPro", ofertasProductor);
+app.use("/api/ofertas", ofertasRoutes);
 app.use("/api/descuentos", descuentosRoutes);
 app.use('/api/descuentos-alt', descuentoRoutes);
 app.use('/api/product-discounts', productoDescuentoRoutes);
 
-// Rutas de Órdenes y Pedidos
+app.use("/api/users", userRoutes);
+app.use("/api/products", adminProductRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/reviews", reviewRoutes);
+
+app.use("/api/pqrs", pqrsRoutes);
+app.use("/api/tipoPqrs", tipoPqrsRoutes);
+app.use("/api/estadoPqrs", estadoPqrsRoutes);
+
+app.use("/api/descuentos", descuentosRoutes);
+
+app.use("/api/product-discounts", productoDescuentoRoutes);
+
 app.use("/api/ordenes", ordenRoutes);
 app.use("/api/pedidos", pedidoRoutes);
-app.use('/api/estadoPedido', estadoPedidoRoutes);
+app.use("/api/estadoPedido", estadoPedidoRoutes);
 
-// Rutas de Productor, Finanzas e Inventario
 app.use("/api/productor", productorRoutes);
 app.use("/api/finanzas", finanzasRoutes);
 const inventarioRoutes = require("./routes/inventarioRoutes");
 app.use("/api/inventarios", inventarioRoutes);
 
-// Rutas de Comentarios y Reseñas
 app.use("/api/comentarios", comentarioResenaRoutes);
 
-// Rutas de Categorías y Subcategorías
 app.use("/api/categories", categoriaRoutes);
-app.use('/api/subcategorias', subcategoriaRoutes);
+app.use("/api/subcategorias", subcategoriaRoutes);
 
-// Rutas de Carrito
 app.use("/api/carrito", carritoRoutes);
 
-// Rutas de Administración
-app.use('/api/roles', rolRoutes);
+app.use("/api/roles", rolRoutes);
 
+// Documentación de Swagger
+const { swaggerDocs } = require('./config/swagger');
+swaggerDocs(app);
 
-db.authenticate()
-  .then(() => {
-    console.log(" Conectado a la base de datos MySQL");
-  })
-  .catch((err) => {
-    console.error(" Error al conectar DB:", err);
-  });
-
-
-
-app.use((err, req, res, next) => {
-  console.error(" Error no manejado:", err.stack);
-  res.status(500).json({
+/* ============================================================
+   RUTA 404
+============================================================ */
+app.use((req, res) => {
+  res.status(404).json({
     success: false,
-    error: "Error interno en el servidor"
+    error: "Ruta no encontrada",
+    path: req.originalUrl
   });
 });
 
-const PORT = process.env.PORT || 4000;
+/* ============================================================
+   ERROR GLOBAL
+============================================================ */
+app.use((err, req, res, next) => {
+  console.error("🔥 Error global:", err.message);
+  res.status(500).json({ success: false, error: "Error interno del servidor" });
+});
 
-app.listen(PORT, () => {
-  console.log(` Servidor corriendo en puerto ${PORT}`);
+/* ============================================================
+   INICIAR SERVIDOR
+============================================================ */
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🚀 Servidor iniciado en http://localhost:${PORT}\n`);
 });

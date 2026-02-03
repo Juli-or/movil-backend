@@ -1,5 +1,5 @@
-const  DataTypes  = require('sequelize');
-const  db  = require('../config/db');
+const { DataTypes } = require('sequelize');
+const db = require('../config/db');
 
 const Producto = db.define('Producto', {
   id_producto: {
@@ -15,7 +15,7 @@ const Producto = db.define('Producto', {
     type: DataTypes.TEXT,
   },
   precio_unitario: {
-    type: DataTypes.DECIMAL(15,3),
+    type: DataTypes.DECIMAL(15, 3),
     allowNull: false
   },
   unidad_medida: {
